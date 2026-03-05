@@ -2,14 +2,16 @@ use godot::prelude::*;
 use godot::classes::{Node, Node2D, INode2D, TileMap, Label, Input, Sprite2D};
 use godot::global::{HorizontalAlignment, VerticalAlignment};
 
+use crate::domain::tabuleiro::BOARD_SIZE;
+
 #[derive(GodotClass)]
 #[class(base=Node2D)]
-pub struct CenaBatalha {
+pub struct CenaTabuleiroBatalha {
     base: Base<Node2D>,
 }
 
 #[godot_api]
-impl INode2D for CenaBatalha {
+impl INode2D for CenaTabuleiroBatalha {
     fn init(base: Base<Node2D>) -> Self {
         Self { base }
     }
@@ -35,7 +37,11 @@ impl INode2D for CenaBatalha {
         let local_pos = tilemap_player.to_local(mouse_pos);
         let map_pos = tilemap_player.local_to_map(local_pos);
 
-        if map_pos.x >= 0 && map_pos.x < 10 && map_pos.y >= 0 && map_pos.y < 10 {
+        if map_pos.x >= 0
+            && map_pos.x < BOARD_SIZE as i32
+            && map_pos.y >= 0
+            && map_pos.y < BOARD_SIZE as i32
+        {
             cursor.set_visible(true);
             
             let tamanho_tile = 16.0;
@@ -55,12 +61,12 @@ impl INode2D for CenaBatalha {
 }
 
 #[godot_api]
-impl CenaBatalha {
+impl CenaTabuleiroBatalha {
     fn gerar_coordenadas(&self, mut tilemap: Gd<TileMap>) {
     let tamanho_tile = 16.0; 
 
     // Números (Topo: 1 a 10)
-    for i in 0..10 {
+    for i in 0..BOARD_SIZE {
         let mut label = Label::new_alloc();
         let texto = format!("{}", i + 1);
         label.set_text(&texto); 
