@@ -19,7 +19,7 @@ impl INode2D for ControladorBatalha {
         let mut tabuleiro_jogador = EstadoTabuleiro::vazio();
         let mut tabuleiro_inimigo = EstadoTabuleiro::vazio();
 
-        // No futuro, implementar a fase de preparação onde o jogador posiciona seus navios
+        // TODO: No futuro, implementar a fase de preparação onde o jogador posiciona seus navios
         tabuleiro_jogador.preencher_aleatoriamente();
         tabuleiro_inimigo.preencher_aleatoriamente();
 
