@@ -3,11 +3,22 @@ use godot::prelude::*;
 
 use crate::domain::disparo::ResultadoDisparo;
 use crate::domain::tabuleiro::{Celula, EstadoTabuleiro, BOARD_SIZE};
-use crate::presentation::batalha::renderizacao_tabuleiro::atlas_tiles::{ATLAS_ACERTO, ATLAS_AGUA, ATLAS_AGUA_ATINGIDA};
+use crate::presentation::batalha::renderizacao_tabuleiro::atlas_tiles::{
+    ATLAS_ACERTO, ATLAS_AGUA_1, ATLAS_AGUA_2, ATLAS_AGUA_ATINGIDA,
+};
 use crate::presentation::batalha::renderizacao_tabuleiro::estilo_preview::{
     cor_preview_invalido, cor_preview_valido,
 };
 use crate::presentation::batalha::renderizacao_tabuleiro::navio_tiles::atlas_navio_por_nome;
+
+// Retorna a sprite de água correta baseado no padrão xadrez
+fn obter_sprite_agua(x: usize, y: usize) -> (i32, i32) {
+    if (x + y) % 2 == 0 {
+        ATLAS_AGUA_1
+    } else {
+        ATLAS_AGUA_2
+    }
+}
 
 pub fn render_resultado_disparo(
     map: &mut Gd<TileMapLayer>,
@@ -49,9 +60,10 @@ pub fn render_tabuleiro_jogador(map: &mut Gd<TileMapLayer>, tabuleiro: &EstadoTa
                             .done();
                     }
                     Celula::Agua => {
+                        let sprite_agua = obter_sprite_agua(x, y);
                         map.set_cell_ex(map_coord)
                             .source_id(0)
-                            .atlas_coords(Vector2i::new(ATLAS_AGUA.0, ATLAS_AGUA.1))
+                            .atlas_coords(Vector2i::new(sprite_agua.0, sprite_agua.1))
                             .done();
                     }
                     Celula::Atingido(_) => {
@@ -61,10 +73,11 @@ pub fn render_tabuleiro_jogador(map: &mut Gd<TileMapLayer>, tabuleiro: &EstadoTa
                             .done();
                     }
                     Celula::Vazio => {
-                        // Renderizar água quando célula fica vazia (ex: navio removido)
+                        // Renderizar água no padrão xadrez quando célula fica vazia (ex: navio removido)
+                        let sprite_agua = obter_sprite_agua(x, y);
                         map.set_cell_ex(map_coord)
                             .source_id(0)
-                            .atlas_coords(Vector2i::new(ATLAS_AGUA.0, ATLAS_AGUA.1))
+                            .atlas_coords(Vector2i::new(sprite_agua.0, sprite_agua.1))
                             .done();
                     }
                 }
