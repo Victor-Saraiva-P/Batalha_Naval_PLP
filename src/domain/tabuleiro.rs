@@ -123,4 +123,46 @@ impl EstadoTabuleiro {
             }
         }
     }
+
+    pub fn remover_navio_na_posicao(&mut self, x: usize, y: usize) -> Option<String> {
+        // Verificar se há um navio nesta posição
+        let navio_idx = match self.cells[x][y] {
+            Celula::Ocupado(idx) | Celula::Atingido(idx) => Some(idx),
+            _ => None,
+        }?;
+        
+        let nome_navio = self.navios.get(navio_idx)?.nome.clone();
+        
+        // Limpar células que contêm esse navio
+        for x in 0..BOARD_SIZE {
+            for y in 0..BOARD_SIZE {
+                match self.cells[x][y] {
+                    Celula::Ocupado(navio_id) | Celula::Atingido(navio_id) if navio_id == navio_idx => {
+                        self.cells[x][y] = Celula::Vazio;
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        // Remover navio da lista
+        self.navios.remove(navio_idx);
+
+        // Atualizar índices nas células (todos os navios depois desse índice devem ser decrementados)
+        for x in 0..BOARD_SIZE {
+            for y in 0..BOARD_SIZE {
+                match self.cells[x][y] {
+                    Celula::Ocupado(navio_id) if navio_id > navio_idx => {
+                        self.cells[x][y] = Celula::Ocupado(navio_id - 1);
+                    }
+                    Celula::Atingido(navio_id) if navio_id > navio_idx => {
+                        self.cells[x][y] = Celula::Atingido(navio_id - 1);
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        Some(nome_navio)
+    }
 }

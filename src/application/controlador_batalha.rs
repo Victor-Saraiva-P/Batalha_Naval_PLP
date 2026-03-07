@@ -236,6 +236,14 @@ impl ControladorBatalha {
 
         self.gerenciador_turnos.forcar_vitoria_ia();
     }
+
+    pub fn confirmar_posicionamento(&mut self) {
+        if self.fase_posicionamento.em_modo_edicao() 
+            && self.fase_posicionamento.todos_posicionados() {
+            self.gerenciador_interface.esconder_botao_confirmar();
+            self.iniciar_fase_batalha();
+        }
+    }
 }
 
 impl ControladorBatalha {
@@ -288,6 +296,18 @@ impl ControladorBatalha {
             return;
         };
 
+        // Se está em modo edição, tentar remover navio
+        if self.fase_posicionamento.em_modo_edicao() {
+            if let Some(nome_navio) = self.jogador_humano.tabuleiro_mut().remover_navio_na_posicao(x, y) {
+                if self.fase_posicionamento.remover_navio(&nome_navio) {
+                    self.atualizar_visual_meu_campo();
+                    self.gerenciador_interface.esconder_botao_confirmar();
+                }
+            }
+            return;
+        }
+
+        // Tentar posicionar novo navio
         match self
             .fase_posicionamento
             .tentar_posicionar_navio(&mut self.jogador_humano, x, y)
@@ -295,7 +315,9 @@ impl ControladorBatalha {
             Ok(concluiu) => {
                 self.atualizar_visual_meu_campo();
                 if concluiu {
-                    self.iniciar_fase_batalha();
+                    // Entrar em modo edição ao invés de começar imediatamente
+                    self.fase_posicionamento.ativar_modo_edicao();
+                    self.gerenciador_interface.mostrar_botao_confirmar();
                 }
             }
             Err(_) => {}

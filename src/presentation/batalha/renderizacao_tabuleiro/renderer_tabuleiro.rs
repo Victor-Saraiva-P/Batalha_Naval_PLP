@@ -3,7 +3,7 @@ use godot::prelude::*;
 
 use crate::domain::disparo::ResultadoDisparo;
 use crate::domain::tabuleiro::{Celula, EstadoTabuleiro, BOARD_SIZE};
-use crate::presentation::batalha::renderizacao_tabuleiro::atlas_tiles::{ATLAS_ACERTO, ATLAS_AGUA};
+use crate::presentation::batalha::renderizacao_tabuleiro::atlas_tiles::{ATLAS_ACERTO, ATLAS_AGUA, ATLAS_AGUA_ATINGIDA};
 use crate::presentation::batalha::renderizacao_tabuleiro::estilo_preview::{
     cor_preview_invalido, cor_preview_valido,
 };
@@ -18,7 +18,7 @@ pub fn render_resultado_disparo(
         ResultadoDisparo::Agua => {
             map.set_cell_ex(map_coord)
                 .source_id(0)
-                .atlas_coords(Vector2i::new(ATLAS_AGUA.0, ATLAS_AGUA.1))
+                .atlas_coords(Vector2i::new(ATLAS_AGUA_ATINGIDA.0, ATLAS_AGUA_ATINGIDA.1))
                 .done();
         }
         ResultadoDisparo::Acerto | ResultadoDisparo::Afundou(_) => {
@@ -60,7 +60,13 @@ pub fn render_tabuleiro_jogador(map: &mut Gd<TileMapLayer>, tabuleiro: &EstadoTa
                             .atlas_coords(Vector2i::new(ATLAS_ACERTO.0, ATLAS_ACERTO.1))
                             .done();
                     }
-                    Celula::Vazio => {}
+                    Celula::Vazio => {
+                        // Renderizar água quando célula fica vazia (ex: navio removido)
+                        map.set_cell_ex(map_coord)
+                            .source_id(0)
+                            .atlas_coords(Vector2i::new(ATLAS_AGUA.0, ATLAS_AGUA.1))
+                            .done();
+                    }
                 }
             }
         }
