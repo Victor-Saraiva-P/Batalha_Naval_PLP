@@ -1,0 +1,7 @@
+[gd_scene format=3 uid="uid://b8vi4rtsudlh7"]
+
+[node name="Button" type="Button" unique_id=1637710422]
+offset_right = 77.0
+offset_bottom = 31.0
+size_flags_vertical = 4
+text = "$jogador"

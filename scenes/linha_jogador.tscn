@@ -1,0 +1,81 @@
+[gd_scene format=3 uid="uid://b8eihd32w3fal"]
+
+[ext_resource type="Texture2D" uid="uid://c6a1qc3g2ocy0" path="res://textures/trofeu.png" id="1_snya6"]
+[ext_resource type="FontFile" uid="uid://cbvk8gbmixmbq" path="res://fonts/Retro Gaming.ttf" id="2_6jsog"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_og77b"]
+font = ExtResource("2_6jsog")
+outline_size = 3
+outline_color = Color(0, 0, 0, 1)
+
+[sub_resource type="LabelSettings" id="LabelSettings_njhn1"]
+outline_size = 3
+outline_color = Color(0, 0, 0, 1)
+
+[sub_resource type="Animation" id="Animation_snya6"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:modulate")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Color(1, 1, 1, 0)]
+}
+
+[sub_resource type="Animation" id="Animation_6jsog"]
+resource_name = "entrada_linha"
+length = 2.3333333
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath(".:modulate")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 2),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Color(1, 1, 1, 0), Color(1, 1, 1, 1)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_og77b"]
+_data = {
+&"RESET": SubResource("Animation_snya6"),
+&"entrada_linha": SubResource("Animation_6jsog")
+}
+
+[node name="HBoxContainer" type="HBoxContainer" unique_id=204678080]
+modulate = Color(1, 1, 1, 0)
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="trofeu" type="TextureRect" parent="." unique_id=437811448]
+layout_mode = 2
+size_flags_horizontal = 0
+texture = ExtResource("1_snya6")
+expand_mode = 3
+
+[node name="nick" type="Label" parent="." unique_id=1107118017]
+layout_mode = 2
+text = "PLAYER1"
+label_settings = SubResource("LabelSettings_og77b")
+
+[node name="espacamento" type="Control" parent="." unique_id=945196816]
+layout_mode = 2
+size_flags_horizontal = 2
+size_flags_vertical = 8
+
+[node name="pontuacao" type="Label" parent="." unique_id=1590032800]
+layout_mode = 2
+text = "0000"
+label_settings = SubResource("LabelSettings_njhn1")
+horizontal_alignment = 2
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=828757676]
+libraries/ = SubResource("AnimationLibrary_og77b")
+autoplay = &"entrada_linha"
