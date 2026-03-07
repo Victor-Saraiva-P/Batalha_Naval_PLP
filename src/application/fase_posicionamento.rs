@@ -47,6 +47,15 @@ impl FasePosicionamento {
             .map(|(nome, tamanho)| (nome.as_str(), *tamanho))
     }
 
+    fn ajustar_coordenada_para_centro(&self, x: usize, y: usize, tamanho: usize) -> (usize, usize) {
+        let offset = tamanho / 2;
+        if self.orientacao_horizontal {
+            (x, y.saturating_sub(offset))
+        } else {
+            (x.saturating_sub(offset), y)
+        }
+    }
+
     pub fn preview_na_posicao(
         &self,
         jogador: &Jogador,
@@ -55,28 +64,25 @@ impl FasePosicionamento {
     ) -> Option<PreviewPosicionamento> {
         let (_, tamanho) = self.navio_atual()?;
 
+        let (start_x, start_y) = self.ajustar_coordenada_para_centro(x, y, tamanho);
         let mut celulas = Vec::with_capacity(tamanho);
-        let mut dentro_do_tabuleiro = true;
 
         for i in 0..tamanho {
             let (cx, cy) = if self.orientacao_horizontal {
-                (x as i32 + i as i32, y as i32)
+                (start_x as i32, start_y as i32 + i as i32)
             } else {
-                (x as i32, y as i32 + i as i32)
+                (start_x as i32 + i as i32, start_y as i32)
             };
 
-            if cx < 0 || cy < 0 || cx >= BOARD_SIZE as i32 || cy >= BOARD_SIZE as i32 {
-                dentro_do_tabuleiro = false;
-                continue;
+            if cx >= 0 && cy >= 0 && cx < BOARD_SIZE as i32 && cy < BOARD_SIZE as i32 {
+                celulas.push((cx as usize, cy as usize));
             }
-
-            celulas.push((cx as usize, cy as usize));
         }
 
-        let valido = dentro_do_tabuleiro
+        let valido = celulas.len() == tamanho
             && jogador
                 .tabuleiro()
-                .pode_posicionar_navio(x, y, tamanho, self.orientacao_horizontal);
+                .pode_posicionar_navio(start_x, start_y, tamanho, self.orientacao_horizontal);
 
         Some(PreviewPosicionamento { celulas, valido })
     }
@@ -91,9 +97,11 @@ impl FasePosicionamento {
             return Ok(true);
         };
 
+        let (start_x, start_y) = self.ajustar_coordenada_para_centro(x, y, tamanho);
+
         jogador
             .tabuleiro_mut()
-            .posicionar_navio(&nome, x, y, tamanho, self.orientacao_horizontal)?;
+            .posicionar_navio(&nome, start_x, start_y, tamanho, self.orientacao_horizontal)?;
 
         self.indice_atual += 1;
         Ok(self.terminou())

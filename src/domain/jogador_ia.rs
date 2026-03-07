@@ -2,7 +2,7 @@ use godot::classes::RandomNumberGenerator;
 use godot::prelude::*;
 
 use crate::domain::disparo::RetornoDisparo;
-use crate::domain::jogador::{Jogador, TipoJogador};
+use crate::domain::jogador::Jogador;
 use crate::domain::tabuleiro::{Celula, EstadoTabuleiro, BOARD_SIZE};
 
 pub trait EstrategiaIA {
@@ -55,10 +55,6 @@ impl JogadorIA {
 
     pub fn jogador_mut(&mut self) -> &mut Jogador {
         &mut self.jogador
-    }
-
-    pub fn tipo(&self) -> TipoJogador {
-        self.jogador.tipo()
     }
 
     pub fn escolher_alvo(&mut self, tabuleiro_inimigo: &EstadoTabuleiro) -> Option<(usize, usize)> {

@@ -76,7 +76,7 @@ impl EstadoTabuleiro {
         horizontal: bool,
     ) -> Result<(), String> {
         for i in 0..tamanho {
-            let (nx, ny) = if horizontal { (x + i, y) } else { (x, y + i) };
+            let (nx, ny) = if horizontal { (x, y + i) } else { (x + i, y) };
             if nx >= BOARD_SIZE || ny >= BOARD_SIZE {
                 return Err("Fora do mapa".into());
             }
@@ -98,7 +98,7 @@ impl EstadoTabuleiro {
         self.navios.push(Navio::novo(nome, tamanho));
 
         for i in 0..tamanho {
-            let (nx, ny) = if horizontal { (x + i, y) } else { (x, y + i) };
+            let (nx, ny) = if horizontal { (x, y + i) } else { (x + i, y) };
             self.cells[nx][ny] = Celula::Ocupado(navio_idx);
         }
         Ok(())

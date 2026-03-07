@@ -34,7 +34,7 @@ pub fn render_resultado_disparo(
 pub fn render_tabuleiro_jogador(map: &mut Gd<TileMapLayer>, tabuleiro: &EstadoTabuleiro) {
     for x in 0..BOARD_SIZE {
         for y in 0..BOARD_SIZE {
-            let map_coord = Vector2i::new(x as i32, y as i32);
+            let map_coord = Vector2i::new(y as i32, x as i32);
             if let Some(celula) = tabuleiro.valor_celula(x, y) {
                 match celula {
                     Celula::Ocupado(navio_idx) => {
@@ -85,7 +85,7 @@ pub fn render_preview_posicionamento(
 
     for (x, y) in celulas.iter() {
         preview_map
-            .set_cell_ex(Vector2i::new(*x as i32, *y as i32))
+            .set_cell_ex(Vector2i::new(*y as i32, *x as i32))
             .source_id(0)
             .atlas_coords(Vector2i::new(atlas_navio.0, atlas_navio.1))
             .done();

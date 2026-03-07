@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cqlq0gpfenhvv"
-path="res://.godot/imported/borda.png-f3f49d881e90612c13c919e3e59f5c84.ctex"
+uid="uid://b1o2e8fmfg667"
+path="res://.godot/imported/borda-topo.png-b4c9a16f3f54ac81bb08faa18900ad10.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://textures/borda.png"
-dest_files=["res://.godot/imported/borda.png-f3f49d881e90612c13c919e3e59f5c84.ctex"]
+source_file="res://textures/borda-topo.png"
+dest_files=["res://.godot/imported/borda-topo.png-b4c9a16f3f54ac81bb08faa18900ad10.ctex"]
 
 [params]
 
