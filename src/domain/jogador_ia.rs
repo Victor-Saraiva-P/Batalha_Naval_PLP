@@ -1,5 +1,5 @@
 use crate::domain::disparo::RetornoDisparo;
-use crate::domain::estrategias_ia::{EstrategiaFacil, EstrategiaIA, EstrategiaIntermediaria};
+use crate::domain::estrategias_ia::{EstrategiaFacil, EstrategiaIA, EstrategiaIntermediaria, EstrategiaDificil};
 use crate::domain::jogador::Jogador;
 use crate::domain::tabuleiro::EstadoTabuleiro;
 
@@ -21,7 +21,7 @@ impl JogadorIA {
         let estrategia: Box<dyn EstrategiaIA> = match dificuldade {
             Dificuldade::Facil => Box::new(EstrategiaFacil),
             Dificuldade::Intermediario => Box::new(EstrategiaIntermediaria::nova()),
-            Dificuldade::Dificil => Box::new(EstrategiaIntermediaria::nova()),
+            Dificuldade::Dificil => Box::new(EstrategiaDificil::nova()),
         };
 
         Self {

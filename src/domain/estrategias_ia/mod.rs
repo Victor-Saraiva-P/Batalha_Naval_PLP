@@ -1,5 +1,6 @@
 pub mod facil;
 pub mod intermediaria;
+pub mod dificil;
 
 use crate::domain::disparo::RetornoDisparo;
 use crate::domain::tabuleiro::EstadoTabuleiro;
@@ -11,3 +12,4 @@ pub trait EstrategiaIA {
 
 pub use facil::EstrategiaFacil;
 pub use intermediaria::EstrategiaIntermediaria;
+pub use dificil::EstrategiaDificil;

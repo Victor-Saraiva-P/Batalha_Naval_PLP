@@ -24,7 +24,7 @@ impl FaseSelecaoDificuldade {
                 Some(JogadorIA::novo_intermediario())
             }
             Key::KEY_3 => {
-                godot_print!("Dificuldade selecionada: Difícil (usando IA Média temporariamente)");
+                godot_print!("Dificuldade selecionada: Difícil");
                 Some(JogadorIA::novo_dificil())
             }
             _ => None,
