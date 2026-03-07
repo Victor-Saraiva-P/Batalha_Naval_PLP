@@ -9,6 +9,15 @@ pub enum ResultadoDisparo {
     ForaDosLimites,
 }
 
+impl ResultadoDisparo {
+    pub fn foi_valido(&self) -> bool {
+        matches!(
+            self,
+            ResultadoDisparo::Agua | ResultadoDisparo::Acerto | ResultadoDisparo::Afundou(_)
+        )
+    }
+}
+
 pub struct RetornoDisparo {
     pub resultado: ResultadoDisparo,
     pub mensagem: String,

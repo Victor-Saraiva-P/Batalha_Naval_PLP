@@ -56,24 +56,20 @@ impl FasePosicionamento {
         let (_, tamanho) = self.navio_atual()?;
 
         let mut celulas = Vec::with_capacity(tamanho);
-        let mut dentro_do_tabuleiro = true;
 
         for i in 0..tamanho {
             let (cx, cy) = if self.orientacao_horizontal {
-                (x as i32 + i as i32, y as i32)
-            } else {
                 (x as i32, y as i32 + i as i32)
+            } else {
+                (x as i32 + i as i32, y as i32)
             };
 
-            if cx < 0 || cy < 0 || cx >= BOARD_SIZE as i32 || cy >= BOARD_SIZE as i32 {
-                dentro_do_tabuleiro = false;
-                continue;
+            if cx >= 0 && cy >= 0 && cx < BOARD_SIZE as i32 && cy < BOARD_SIZE as i32 {
+                celulas.push((cx as usize, cy as usize));
             }
-
-            celulas.push((cx as usize, cy as usize));
         }
 
-        let valido = dentro_do_tabuleiro
+        let valido = celulas.len() == tamanho
             && jogador
                 .tabuleiro()
                 .pode_posicionar_navio(x, y, tamanho, self.orientacao_horizontal);

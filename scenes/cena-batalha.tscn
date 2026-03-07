@@ -371,7 +371,7 @@ tile_map_data = PackedByteArray("AAABAAEAAAAFAAEAAAABAAIAAAAGAAEAAAABAAMAAAAFAAE
 tile_set = SubResource("TileSet_rq1qq")
 
 [node name="PreviewPosicionamento" type="TileMapLayer" parent="ControladorBatalha"]
-position = Vector2(64, 80)
+position = Vector2(92, 122)
 tile_set = SubResource("TileSet_rq1qq")
 
 [node name="Sprite2D" type="Sprite2D" parent="ControladorBatalha/CampoJogador" unique_id=2126277640]

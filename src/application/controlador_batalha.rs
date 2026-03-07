@@ -1,177 +1,113 @@
-use godot::classes::{INode2D, Input, InputEvent, InputEventMouseButton, Label, Node, Node2D, TileMapLayer};
+use godot::classes::{INode2D, Input, InputEvent, InputEventMouseButton, Label, Node2D, TileMapLayer};
 use godot::global::MouseButton;
 use godot::prelude::*;
 
 use crate::application::fase_posicionamento::FasePosicionamento;
-use crate::application::helpers::cursor;
+use crate::application::helpers::{conversao_coordenadas, coordenadas, cursor};
 use crate::application::gerenciador_turnos::{GerenciadorTurnos, EstadoTurno};
-use crate::application::ias::ia_simples::IASimples;
-use crate::domain::disparo::{ResultadoDisparo, executar_disparo};
+use crate::domain::disparo::ResultadoDisparo;
 use crate::domain::jogador::Jogador;
 use crate::domain::jogador_ia::JogadorIA;
-use crate::domain::tabuleiro::{Celula, BOARD_SIZE, EstadoTabuleiro};
 use crate::presentation::batalha::{
     limpar_preview, render_preview_posicionamento, render_resultado_disparo, render_tabuleiro_jogador,
 };
 
 const DELAY_TURNO_IA: f64 = 0.7;
 
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum FaseJogo {
-    PosicionandoJogador,
-    TurnoJogador,
-    TurnoIAAguardandoDelay,
-    FimDeJogo,
-}
-
 #[derive(GodotClass)]
 #[class(base = Node2D)]
 pub struct ControladorBatalha {
-    // Campos do HEAD (antigo)
     jogador_humano: Jogador,
     jogador_ia: JogadorIA,
     fase_posicionamento: FasePosicionamento,
-    fase: FaseJogo,
+    gerenciador_turnos: GerenciadorTurnos,
     tempo_restante_ia: f64,
     tooltip_instrucao: Option<Gd<Label>>,
-
-    // Campos do branch novo
-    tabuleiro_jogador: EstadoTabuleiro,
-    tabuleiro_inimigo: EstadoTabuleiro,
-    gerenciador_turnos: GerenciadorTurnos,
-    ia: IASimples,
-    processando_turno_ia: bool,
-    tempo_espera_ia: f64,
-
     base: Base<Node2D>,
 }
 
 #[godot_api]
 impl INode2D for ControladorBatalha {
     fn init(base: Base<Node2D>) -> Self {
-        // Inicialização HEAD (antigo)
-        let jogador_humano = Jogador::novo_humano();
-        let jogador_ia = JogadorIA::novo_facil();
-        let fase_posicionamento = FasePosicionamento::nova();
-        let fase = FaseJogo::PosicionandoJogador;
-        let tempo_restante_ia = 0.0;
-        let tooltip_instrucao = None;
-
-        // Inicialização branch novo
-        let tabuleiro_jogador = EstadoTabuleiro::vazio();
-        let tabuleiro_inimigo = EstadoTabuleiro::vazio();
-        // Mock IA - posicionamento será feito depois
-        let gerenciador_turnos = GerenciadorTurnos::novo(1);
-        let ia = IASimples::nova();
-        let processando_turno_ia = false;
-        let tempo_espera_ia = 0.0;
+        let total_navios: u32 = crate::domain::tabuleiro::FROTA_PADRAO
+            .iter()
+            .map(|config| config.quantidade as u32)
+            .sum();
 
         Self {
-            jogador_humano,
-            jogador_ia,
-            fase_posicionamento,
-            fase,
-            tempo_restante_ia,
-            tooltip_instrucao,
-            tabuleiro_jogador,
-            tabuleiro_inimigo,
-            gerenciador_turnos,
-            ia,
-            processando_turno_ia,
-            tempo_espera_ia,
+            jogador_humano: Jogador::novo_humano(),
+            jogador_ia: JogadorIA::novo_facil(),
+            fase_posicionamento: FasePosicionamento::nova(),
+            gerenciador_turnos: GerenciadorTurnos::novo(total_navios),
+            tempo_restante_ia: 0.0,
+            tooltip_instrucao: None,
             base,
         }
     }
 
+    fn ready(&mut self) {
+        if let Some(campo_jogador) = self.base().try_get_node_as::<TileMapLayer>("CampoJogador") {
+            coordenadas::gerar_coordenadas(campo_jogador);
+        }
+        if let Some(campo_ia) = self.base().try_get_node_as::<TileMapLayer>("CampoIA") {
+            coordenadas::gerar_coordenadas(campo_ia);
+        }
+    }
+
     fn process(&mut self, delta: f64) {
-        // Tooltip e rotação
         self.atualizar_tooltip_posicionamento();
         
-        if self.fase == FaseJogo::PosicionandoJogador {
+        if self.gerenciador_turnos.estado_atual() == EstadoTurno::PosicionamentoJogador {
             self.atualizar_preview_posicionamento();
             let input = Input::singleton();
             if input.is_action_just_pressed("rotacionar_navio") {
                 self.fase_posicionamento.alternar_orientacao();
-                godot_print!(
-                    "Orientação alterada para {}.",
-                    self.fase_posicionamento.orientacao_texto().to_lowercase()
-                );
             }
         } else {
             self.limpar_preview_posicionamento();
         }
 
-        // Controle de cursor
-        let input = Input::singleton();
-        let mouse_pos = self.base().get_global_mouse_position();
-        if let Some(campo_jogador) = self.base().try_get_node_as::<TileMapLayer>("CampoJogador") {
-            cursor::controlar_cursor(campo_jogador, mouse_pos, input.clone(), "campo do jogador");
-        }
-        if let Some(campo_ia) = self.base().try_get_node_as::<TileMapLayer>("CampoIA") {
-            cursor::controlar_cursor(campo_ia, mouse_pos, input, "campo da IA");
-        }
+        self.atualizar_controle_cursor();
 
-        // Turno IA (sistema antigo)
-        if self.fase == FaseJogo::TurnoIAAguardandoDelay {
+        if self.gerenciador_turnos.estado_atual() == EstadoTurno::TurnoIA {
             self.tempo_restante_ia -= delta;
             if self.tempo_restante_ia <= 0.0 {
                 self.executar_turno_ia();
             }
         }
-
-        // Turno IA (sistema novo)
-        if self.gerenciador_turnos.estado_atual() == EstadoTurno::TurnoIA {
-            if !self.processando_turno_ia {
-                self.processando_turno_ia = true;
-                self.tempo_espera_ia = 0.0;
-            } else {
-                self.tempo_espera_ia += delta;
-                if self.tempo_espera_ia >= 1.0 {
-                    self.processar_ataque_ia();
-                    self.processando_turno_ia = false;
-                    if !self.gerenciador_turnos.jogo_terminou() {
-                        godot_print!("📋 {}", self.gerenciador_turnos.mensagem_estado());
-                    }
-                }
-            }
-        }
     }
 
     fn input(&mut self, event: Gd<InputEvent>) {
-        if self.fase == FaseJogo::FimDeJogo {
+        if self.gerenciador_turnos.jogo_terminou() {
             return;
         }
+        
         if let Ok(mouse_event) = event.try_cast::<InputEventMouseButton>() {
             if !mouse_event.is_pressed() || mouse_event.get_button_index() != MouseButton::LEFT {
                 return;
             }
-            let click_pos = mouse_event.get_global_position();
-            if self.fase == FaseJogo::PosicionandoJogador {
-                self.tratar_clique_posicionamento(click_pos);
-                return;
-            }
-            if self.fase == FaseJogo::TurnoJogador {
-                self.tratar_clique_disparo_jogador(click_pos);
+            let click_pos = self.base().get_global_mouse_position();
+            
+            match self.gerenciador_turnos.estado_atual() {
+                EstadoTurno::PosicionamentoJogador => {
+                    self.tratar_clique_posicionamento(click_pos);
+                }
+                EstadoTurno::TurnoJogador => {
+                    self.tratar_clique_disparo_jogador(click_pos);
+                }
+                _ => {}
             }
         }
     }
 }
 
 impl ControladorBatalha {
-    fn criar_tooltip_instrucao(&mut self) {
-        let mut tooltip = Label::new_alloc();
-        tooltip.set_visible(false);
-        tooltip.set_scale(Vector2::new(0.5, 0.5));
-        self.base_mut().add_child(&tooltip.clone().upcast::<Node>());
-        self.tooltip_instrucao = Some(tooltip);
-    }
-
     fn atualizar_tooltip_posicionamento(&mut self) {
         let Some(mut tooltip) = self.tooltip_instrucao.clone() else {
             return;
         };
 
-        if self.fase != FaseJogo::PosicionandoJogador {
+        if self.gerenciador_turnos.estado_atual() != EstadoTurno::PosicionamentoJogador {
             tooltip.set_visible(false);
             return;
         }
@@ -201,13 +137,8 @@ impl ControladorBatalha {
             return;
         };
 
-        let Some((x, y, _)) = Self::coordenada_tabuleiro_do_clique(player_map, click_pos) else {
+        let Some((x, y, _)) = conversao_coordenadas::clique_para_coordenada(player_map, click_pos) else {
             return;
-        };
-
-        let nome_navio = match self.fase_posicionamento.navio_atual() {
-            Some((nome, _)) => nome.to_string(),
-            None => "Navio".to_string(),
         };
 
         match self
@@ -220,20 +151,18 @@ impl ControladorBatalha {
                     self.iniciar_fase_batalha();
                 }
             }
-            Err(erro) => {
-                godot_print!("Não foi possível posicionar {}: {}", nome_navio, erro);
-            }
+            Err(_) => {}
         }
     }
 
     fn iniciar_fase_batalha(&mut self) {
+        self.gerenciador_turnos.finalizar_posicionamento_jogador();
         self.jogador_ia
             .jogador_mut()
             .tabuleiro_mut()
             .preencher_aleatoriamente();
         self.limpar_preview_posicionamento();
-        self.fase = FaseJogo::TurnoJogador;
-        godot_print!("Frotas prontas. Batalha iniciada! O jogador começa atirando.");
+        self.gerenciador_turnos.iniciar_jogo();
     }
 
     fn atualizar_preview_posicionamento(&mut self) {
@@ -248,7 +177,12 @@ impl ControladorBatalha {
         };
 
         let mouse_pos = self.base().get_global_mouse_position();
-        let Some((x, y, _)) = Self::coordenada_tabuleiro_do_clique(player_map, mouse_pos) else {
+        let Some((x, y, _)) = conversao_coordenadas::clique_para_coordenada(player_map, mouse_pos) else {
+            limpar_preview(&mut preview_map);
+            return;
+        };
+
+        let Some((nome_navio, _)) = self.fase_posicionamento.navio_atual() else {
             limpar_preview(&mut preview_map);
             return;
         };
@@ -260,10 +194,7 @@ impl ControladorBatalha {
             limpar_preview(&mut preview_map);
             return;
         };
-        let Some((nome_navio, _)) = self.fase_posicionamento.navio_atual() else {
-            limpar_preview(&mut preview_map);
-            return;
-        };
+        
         render_preview_posicionamento(&mut preview_map, nome_navio, &preview.celulas, preview.valido);
     }
 
@@ -282,7 +213,7 @@ impl ControladorBatalha {
         };
 
         let Some((x, y, map_coord)) =
-            Self::coordenada_tabuleiro_do_clique(enemy_map.clone(), click_pos)
+            conversao_coordenadas::clique_para_coordenada(enemy_map.clone(), click_pos)
         else {
             return;
         };
@@ -292,13 +223,19 @@ impl ControladorBatalha {
 
         render_resultado_disparo(&mut enemy_map, map_coord, &retorno.resultado);
 
-        if self.verificar_fim_de_jogo() {
-            return;
-        }
-
-        if Self::disparo_foi_valido(&retorno.resultado) {
-            self.fase = FaseJogo::TurnoIAAguardandoDelay;
-            self.tempo_restante_ia = DELAY_TURNO_IA;
+        if retorno.resultado.foi_valido() {
+            let acertou = matches!(retorno.resultado, ResultadoDisparo::Acerto | ResultadoDisparo::Afundou(_));
+            let afundou = matches!(retorno.resultado, ResultadoDisparo::Afundou(_));
+            
+            self.gerenciador_turnos.processar_ataque_jogador(acertou, afundou);
+            
+            if self.jogador_ia.perdeu() {
+                return;
+            }
+            
+            if !self.gerenciador_turnos.jogo_terminou() {
+                self.tempo_restante_ia = DELAY_TURNO_IA;
+            }
         }
     }
 
@@ -307,145 +244,58 @@ impl ControladorBatalha {
             .jogador_ia
             .escolher_alvo(self.jogador_humano.tabuleiro())
         else {
-            self.fase = FaseJogo::FimDeJogo;
-            godot_print!("Sem alvos restantes para a IA.");
             return;
         };
 
         let retorno = self.jogador_humano.receber_disparo(x, y);
-        godot_print!("Turno da IA: {}", retorno.mensagem);
+        godot_print!("IA: {}", retorno.mensagem);
 
         if let Some(mut player_map) = self.base().try_get_node_as::<TileMapLayer>("CampoJogador") {
             render_resultado_disparo(
                 &mut player_map,
-                Vector2i::new(x as i32, y as i32),
+                Vector2i::new(y as i32, x as i32),
                 &retorno.resultado,
             );
         }
 
-        if self.verificar_fim_de_jogo() {
-            return;
-        }
-
-        self.fase = FaseJogo::TurnoJogador;
+        let acertou = matches!(retorno.resultado, ResultadoDisparo::Acerto | ResultadoDisparo::Afundou(_));
+        let afundou = matches!(retorno.resultado, ResultadoDisparo::Afundou(_));
+        
+        self.gerenciador_turnos.processar_ataque_ia(acertou, afundou);
     }
 
-    fn verificar_fim_de_jogo(&mut self) -> bool {
-        if self.jogador_ia.perdeu() {
-            self.fase = FaseJogo::FimDeJogo;
-            godot_print!("Fim de jogo! O jogador venceu.");
-            return true;
+    fn atualizar_controle_cursor(&mut self) {
+        let mouse_pos = self.base().get_global_mouse_position();
+        let estado = self.gerenciador_turnos.estado_atual();
+
+        let (mostrar_jogador, mostrar_ia) = match estado {
+            EstadoTurno::PosicionamentoJogador => (true, false),
+            EstadoTurno::TurnoJogador => (false, true),
+            _ => (false, false),
+        };
+
+        if let Some(campo_jogador) = self.base().try_get_node_as::<TileMapLayer>("CampoJogador") {
+            if mostrar_jogador {
+                cursor::controlar_cursor(campo_jogador, mouse_pos);
+            } else {
+                cursor::esconder_cursor(campo_jogador);
+            }
         }
 
-        if self.jogador_humano.perdeu() {
-            self.fase = FaseJogo::FimDeJogo;
-            godot_print!("Fim de jogo! A IA venceu.");
-            return true;
+        if let Some(campo_ia) = self.base().try_get_node_as::<TileMapLayer>("CampoIA") {
+            if mostrar_ia {
+                cursor::controlar_cursor(campo_ia, mouse_pos);
+            } else {
+                cursor::esconder_cursor(campo_ia);
+            }
         }
-
-        false
-    }
-
-    fn disparo_foi_valido(resultado: &ResultadoDisparo) -> bool {
-        matches!(
-            resultado,
-            ResultadoDisparo::Agua | ResultadoDisparo::Acerto | ResultadoDisparo::Afundou(_)
-        )
-    }
-
-    fn coordenada_tabuleiro_do_clique(
-        map: Gd<TileMapLayer>,
-        click_pos: Vector2,
-    ) -> Option<(usize, usize, Vector2i)> {
-        let local_pos = map.to_local(click_pos);
-        let map_coord = map.local_to_map(local_pos);
-
-        if map_coord.x < 0
-            || map_coord.y < 0
-            || map_coord.x >= BOARD_SIZE as i32
-            || map_coord.y >= BOARD_SIZE as i32
-        {
-            return None;
-        }
-
-        Some((map_coord.x as usize, map_coord.y as usize, map_coord))
     }
 
     fn atualizar_visual_meu_campo(&mut self) {
         if let Some(mut player_map) = self.base().try_get_node_as::<TileMapLayer>("CampoJogador") {
             render_tabuleiro_jogador(&mut player_map, self.jogador_humano.tabuleiro());
-            for x in 0..BOARD_SIZE {
-                for y in 0..BOARD_SIZE {
-                    let map_coord = Vector2i::new(x as i32, y as i32);
-                    if let Some(celula) = self.jogador_humano.tabuleiro().valor_celula(x, y) {
-                        match celula {
-                            Celula::Ocupado(_) => {
-                                player_map
-                                    .set_cell_ex(map_coord)
-                                    .source_id(0)
-                                    .atlas_coords(Vector2i::new(8, 7))
-                                    .done();
-                            }
-                            Celula::Agua => {
-                                player_map
-                                    .set_cell_ex(map_coord)
-                                    .source_id(0)
-                                    .atlas_coords(Vector2i::new(8, 3))
-                                    .done();
-                            }
-                            Celula::Atingido(_) => {
-                                player_map
-                                    .set_cell_ex(map_coord)
-                                    .source_id(0)
-                                    .atlas_coords(Vector2i::new(10, 3))
-                                    .done();
-                            }
-                            Celula::Vazio => {}
-                        }
-                    }
-                }
-            }
         }
     }
 }
 
-#[godot_api]
-impl ControladorBatalha {
-    /// Processa o ataque da IA
-    fn processar_ataque_ia(&mut self) {
-        if let Some((x, y)) = self.ia.escolher_ataque(BOARD_SIZE as i32) {
-            let retorno_disparo = executar_disparo(&mut self.tabuleiro_jogador, x as usize, y as usize);
-            
-            godot_print!("{}", retorno_disparo.mensagem);
 
-            // Atualiza o campo do jogador visualmente
-            if let Some(mut campo_jogador) = self.base().try_get_node_as::<TileMapLayer>("CampoJogador") {
-                let map_coord = Vector2i::new(x, y);
-                
-                match retorno_disparo.resultado {
-                    ResultadoDisparo::Agua => {
-                        campo_jogador
-                            .set_cell_ex(map_coord)
-                            .source_id(0)
-                            .atlas_coords(Vector2i::new(8, 3))
-                            .done();
-                        
-                        // Mock: considera que não afundou navio
-                        self.gerenciador_turnos.processar_ataque_ia(false, false);
-                    }
-                    ResultadoDisparo::Acerto => {
-                        campo_jogador
-                            .set_cell_ex(map_coord)
-                            .source_id(0)
-                            .atlas_coords(Vector2i::new(10, 3))
-                            .done();
-                        
-                        // Mock: considera que acerto = navio afundado
-                        self.gerenciador_turnos.processar_ataque_ia(true, true);
-                    }
-                    _ => {}
-                }
-            }
-        }
-    }
-}
