@@ -1,0 +1,106 @@
+[gd_scene format=3 uid="uid://dwprnxdpbj2ov"]
+
+[ext_resource type="Texture2D" uid="uid://hj5ghj0wwe2h" path="res://background_menu.webp" id="1_cefhe"]
+[ext_resource type="FontFile" uid="uid://cbvk8gbmixmbq" path="res://fonts/Retro Gaming.ttf" id="2_x6tfd"]
+[ext_resource type="Script" uid="uid://bh4mmujqquxnf" path="res://tela_login.gd" id="3_x6tfd"]
+[ext_resource type="PackedScene" uid="uid://bo6cmgk4y7g23" path="res://scenes/meubotao.tscn" id="4_dwemr"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_knros"]
+font = ExtResource("2_x6tfd")
+font_size = 48
+font_color = Color(0.94509804, 0.76862746, 0.05882353, 1)
+shadow_size = 18
+shadow_color = Color(0.49411765, 0.31764707, 0.03529412, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_5dpk2"]
+content_margin_left = 15.0
+content_margin_top = 15.0
+content_margin_right = 15.0
+content_margin_bottom = 15.0
+bg_color = Color(0.44313726, 0.79607844, 0.9647059, 0.6392157)
+corner_radius_top_left = 15
+corner_radius_top_right = 15
+corner_radius_bottom_right = 15
+corner_radius_bottom_left = 15
+
+[node name="Margin container" type="TextureRect" unique_id=1118339370]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("1_cefhe")
+expand_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=605589437]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_top = 60
+
+[node name="Label" type="Label" parent="MarginContainer" unique_id=752176807]
+layout_mode = 2
+size_flags_vertical = 0
+text = "BattleShip Rust"
+label_settings = SubResource("LabelSettings_knros")
+horizontal_alignment = 1
+
+[node name="MargemCampos" type="PanelContainer" parent="." unique_id=360564036]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -65.0
+offset_right = -30.0
+offset_bottom = 174.0
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_5dpk2")
+
+[node name="ContainerAutenticacao" type="VBoxContainer" parent="MargemCampos" unique_id=1485523045]
+layout_mode = 2
+script = ExtResource("3_x6tfd")
+
+[node name="campos" type="VBoxContainer" parent="MargemCampos/ContainerAutenticacao" unique_id=450355554]
+layout_mode = 2
+theme_override_constants/separation = 15
+
+[node name="login" type="LineEdit" parent="MargemCampos/ContainerAutenticacao/campos" unique_id=1789715892]
+layout_mode = 2
+placeholder_text = "login"
+
+[node name="senha" type="LineEdit" parent="MargemCampos/ContainerAutenticacao/campos" unique_id=203527566]
+layout_mode = 2
+placeholder_text = "senha"
+secret = true
+secret_character = "*"
+
+[node name="Erro" type="Label" parent="MargemCampos/ContainerAutenticacao" unique_id=354948482]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.26666668, 0.26666668, 1)
+horizontal_alignment = 1
+
+[node name="botoes" type="VBoxContainer" parent="MargemCampos/ContainerAutenticacao" unique_id=1054789272]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_constants/separation = 15
+
+[node name="entrar" parent="MargemCampos/ContainerAutenticacao/botoes" unique_id=1246405146 instance=ExtResource("4_dwemr")]
+layout_mode = 2
+text = "Entrar"
+
+[node name="cadastro" parent="MargemCampos/ContainerAutenticacao/botoes" unique_id=437671320 instance=ExtResource("4_dwemr")]
+layout_mode = 2
+text = "Cadastro"
+
+[node name="sair" parent="MargemCampos/ContainerAutenticacao/botoes" unique_id=1385780686 instance=ExtResource("4_dwemr")]
+layout_mode = 2
+text = "Sair"
