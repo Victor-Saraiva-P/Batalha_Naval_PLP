@@ -58,7 +58,7 @@ anchor_bottom = 0.5
 offset_left = -225.0
 offset_top = -66.0
 offset_right = -94.0
-offset_bottom = 96.0
+offset_bottom = 132.0
 grow_horizontal = 0
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_5dpk2")
@@ -72,6 +72,11 @@ script = ExtResource("3_pi62y")
 
 [node name="start" parent="MargemBotoes/botoes" unique_id=1246405146 instance=ExtResource("3_ectly")]
 layout_mode = 2
+text = "Modo Campanha"
+
+[node name="dinamico" parent="MargemBotoes/botoes" unique_id=188357110 instance=ExtResource("3_ectly")]
+layout_mode = 2
+text = "Modo Dinâmico"
 
 [node name="option" parent="MargemBotoes/botoes" unique_id=437671320 instance=ExtResource("3_ectly")]
 layout_mode = 2
