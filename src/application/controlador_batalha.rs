@@ -87,6 +87,14 @@ impl INode2D for ControladorBatalha {
             self.gerenciador_turnos.rodada_atual(),
         );
 
+        // Detectar mudança de estado para PosicionamentoJogador e popular container
+        if self.estado_anterior == EstadoTurno::SelecaoDificuldade && 
+           self.gerenciador_turnos.estado_atual() == EstadoTurno::PosicionamentoJogador {
+            godot_print!("Mudou para PosicionamentoJogador - populando container");
+            self.popular_container_navios();
+        }
+        self.estado_anterior = self.gerenciador_turnos.estado_atual();
+
         if self.gerenciador_turnos.estado_atual() == EstadoTurno::SelecaoDificuldade {
             if let Some(campo_jogador) = self.base().try_get_node_as::<TileMapLayer>("CampoJogador") {
                 cursor::esconder_cursor(campo_jogador);
@@ -185,30 +193,36 @@ impl ControladorBatalha {
 
     #[func]
     pub fn selecionar_dificuldade_facil(&mut self) {
+        godot_print!("selecionar_dificuldade_facil chamado");
         if self.gerenciador_turnos.estado_atual() == EstadoTurno::SelecaoDificuldade {
             if let Some(ia) = self.fase_selecao_dificuldade.processar_selecao(0) {
                 self.jogador_ia = Some(ia);
                 self.gerenciador_turnos.confirmar_dificuldade();
+                godot_print!("Dificuldade confirmada, estado agora: {:?}", self.gerenciador_turnos.estado_atual());
             }
         }
     }
 
     #[func]
     pub fn selecionar_dificuldade_media(&mut self) {
+        godot_print!("selecionar_dificuldade_media chamado");
         if self.gerenciador_turnos.estado_atual() == EstadoTurno::SelecaoDificuldade {
             if let Some(ia) = self.fase_selecao_dificuldade.processar_selecao(1) {
                 self.jogador_ia = Some(ia);
                 self.gerenciador_turnos.confirmar_dificuldade();
+                godot_print!("Dificuldade confirmada, estado agora: {:?}", self.gerenciador_turnos.estado_atual());
             }
         }
     }
 
     #[func]
     pub fn selecionar_dificuldade_dificil(&mut self) {
+        godot_print!("selecionar_dificuldade_dificil chamado");
         if self.gerenciador_turnos.estado_atual() == EstadoTurno::SelecaoDificuldade {
             if let Some(ia) = self.fase_selecao_dificuldade.processar_selecao(2) {
                 self.jogador_ia = Some(ia);
                 self.gerenciador_turnos.confirmar_dificuldade();
+                godot_print!("Dificuldade confirmada, estado agora: {:?}", self.gerenciador_turnos.estado_atual());
             }
         }
     }
@@ -247,6 +261,17 @@ impl ControladorBatalha {
                 .emit_signal("batalha_encerrada", &[vitoria.to_variant()]);
         }
     }
+
+    #[func]
+    pub fn selecionar_navio_do_container(&mut self, indice: i32) {
+        if indice < 0 {
+            return;
+        }
+        
+        if self.fase_posicionamento.selecionar_navio(indice as usize) {
+            godot_print!("Navio {} selecionado", indice);
+        }
+    }
 }
 
 impl ControladorBatalha {
@@ -260,6 +285,99 @@ impl ControladorBatalha {
         // Signal will be emitted by continuar() method when button is pressed
     }
 
+    fn popular_container_navios(&mut self) {
+        let Some(mut container) = self.gerenciador_interface.container_navios() else {
+            godot_print!("ERRO: Container de navios não encontrado!");
+            return;
+        };
+
+        use godot::classes::{AtlasTexture, Button, FontFile, HBoxContainer as GdHBoxContainer, 
+                             ResourceLoader, Texture2D, TextureRect, VBoxContainer};
+        use godot::classes::box_container::AlignmentMode;
+        
+        // Limpar container primeiro
+        for mut child in container.get_children().iter_shared() {
+            child.queue_free();
+        }
+
+        let fila_navios = self.fase_posicionamento.obter_fila_navios();
+        godot_print!("Popular container com {} navios", fila_navios.len());
+        
+        // Carregar recursos
+        let mut resource_loader = ResourceLoader::singleton();
+        let font = resource_loader
+            .load("res://fonts/Retro Gaming.ttf")
+            .and_then(|res| res.try_cast::<FontFile>().ok());
+        
+        let textura_navios = resource_loader
+            .load("res://textures/Water+.png")
+            .and_then(|res| res.try_cast::<Texture2D>().ok());
+
+        for (idx, (nome, tamanho)) in fila_navios.iter().enumerate() {
+            // Container vertical para cada navio (sprites + botão)
+            let mut vbox = VBoxContainer::new_alloc();
+            vbox.set_custom_minimum_size(Vector2::new((*tamanho as f32) * 12.0 + 8.0, 40.0));
+            
+            // Container horizontal para os sprites
+            let mut hbox_sprites = GdHBoxContainer::new_alloc();
+            hbox_sprites.set_alignment(AlignmentMode::CENTER); // Centralizado
+            hbox_sprites.add_theme_constant_override("separation", 1);
+            
+            // Criar sprites do navio (repetir o sprite N vezes baseado no tamanho)
+            if let Some(ref textura) = textura_navios {
+                for _ in 0..*tamanho {
+                    let mut atlas = AtlasTexture::new_gd();
+                    atlas.set_atlas(textura);
+                    // Sprite do navio em (8, 7) no atlas - cada tile é 16x16
+                    atlas.set_region(Rect2::new(Vector2::new(8.0 * 16.0, 7.0 * 16.0), Vector2::new(16.0, 16.0)));
+                    
+                    let mut sprite_rect = TextureRect::new_alloc();
+                    sprite_rect.set_texture(&atlas.upcast::<Texture2D>());
+                    sprite_rect.set_custom_minimum_size(Vector2::new(12.0, 12.0));
+                    sprite_rect.set_expand_mode(godot::classes::texture_rect::ExpandMode::IGNORE_SIZE);
+                    sprite_rect.set_stretch_mode(godot::classes::texture_rect::StretchMode::KEEP);
+                    
+                    hbox_sprites.add_child(&sprite_rect);
+                }
+            }
+            
+            vbox.add_child(&hbox_sprites);
+            
+            // Botão clicável embaixo dos sprites
+            let mut botao = Button::new_alloc();
+            if let Some(ref font_file) = font {
+                botao.add_theme_font_override("font", font_file);
+            }
+            botao.add_theme_font_size_override("font_size", 8);
+            botao.set_text(nome);
+            botao.set_custom_minimum_size(Vector2::new((*tamanho as f32) * 12.0 + 8.0, 20.0));
+            
+            // Conectar sinal
+            let controlador = self.base().clone();
+            let indice = idx as i32;
+            botao.connect("pressed", &controlador.callable("selecionar_navio_do_container").bind(&[indice.to_variant()]));
+            
+            vbox.add_child(&botao);
+            container.add_child(&vbox);
+            
+            godot_print!("Adicionado navio visual: {} com {} sprites", nome, tamanho);
+        }
+        
+        container.set_visible(true);
+        godot_print!("Container visível: {}", container.is_visible());
+    }
+
+    fn atualizar_container_navios(&mut self) {
+        self.popular_container_navios();
+        
+        // Se não há mais navios, esconder container e mostrar botão
+        if self.fase_posicionamento.todos_posicionados() {
+            self.gerenciador_interface.esconder_container_navios();
+            self.fase_posicionamento.ativar_modo_edicao();
+            self.gerenciador_interface.mostrar_botao_confirmar();
+        }
+    }
+
     fn atualizar_tooltip_posicionamento(&mut self) {
         let Some(mut tooltip) = self.tooltip_instrucao.clone() else {
             return;
@@ -270,17 +388,19 @@ impl ControladorBatalha {
             return;
         }
 
-        let Some((nome, tamanho)) = self.fase_posicionamento.navio_atual() else {
-            tooltip.set_visible(false);
-            return;
+        let texto = match self.fase_posicionamento.navio_atual() {
+            Some((nome, tamanho)) => {
+                format!(
+                    "Posicione: {} ({})\nClique: posicionar | R: rotacionar ({})",
+                    nome,
+                    tamanho,
+                    self.fase_posicionamento.orientacao_texto()
+                )
+            }
+            None => {
+                "Selecione um navio da lista abaixo para posicionar".to_string()
+            }
         };
-
-        let texto = format!(
-            "Posicione: {} ({})\nClique: posicionar | R: rotacionar ({})",
-            nome,
-            tamanho,
-            self.fase_posicionamento.orientacao_texto()
-        );
 
         tooltip.set_text(&texto);
         tooltip.set_visible(true);
@@ -299,29 +419,25 @@ impl ControladorBatalha {
             return;
         };
 
-        // Se está em modo edição, tentar remover navio
-        if self.fase_posicionamento.em_modo_edicao() {
-            if let Some(nome_navio) = self.jogador_humano.tabuleiro_mut().remover_navio_na_posicao(x, y) {
-                if self.fase_posicionamento.remover_navio(&nome_navio) {
-                    self.atualizar_visual_meu_campo();
-                    self.gerenciador_interface.esconder_botao_confirmar();
-                }
+        // Primeiro, tentar remover navio existente na posição
+        if let Some(nome_navio) = self.jogador_humano.tabuleiro_mut().remover_navio_na_posicao(x, y) {
+            if self.fase_posicionamento.remover_navio(&nome_navio) {
+                self.atualizar_visual_meu_campo();
+                self.gerenciador_interface.esconder_botao_confirmar();
+                // Navio removido fica selecionado para reposicionamento
+                // Não faz return - deixa continuar para posicionar se clicar novamente
             }
             return;
         }
 
-        // Tentar posicionar novo navio
+        // Se não havia navio na posição, tentar posicionar o navio selecionado
         match self
             .fase_posicionamento
             .tentar_posicionar_navio(&mut self.jogador_humano, x, y)
         {
-            Ok(concluiu) => {
+            Ok(_) => {
                 self.atualizar_visual_meu_campo();
-                if concluiu {
-                    // Entrar em modo edição ao invés de começar imediatamente
-                    self.fase_posicionamento.ativar_modo_edicao();
-                    self.gerenciador_interface.mostrar_botao_confirmar();
-                }
+                self.atualizar_container_navios();
             }
             Err(_) => {}
         }

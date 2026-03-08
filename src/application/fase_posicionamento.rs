@@ -9,7 +9,8 @@ pub struct PreviewPosicionamento {
 
 pub struct FasePosicionamento {
     fila_navios: Vec<(String, usize)>,
-    indice_atual: usize,
+    navio_selecionado: Option<usize>,
+    navio_em_reposicionamento: Option<(String, usize)>,
     orientacao_horizontal: bool,
     modo_edicao: bool,
 }
@@ -25,7 +26,8 @@ impl FasePosicionamento {
 
         Self {
             fila_navios,
-            indice_atual: 0,
+            navio_selecionado: None,
+            navio_em_reposicionamento: None,
             orientacao_horizontal: true,
             modo_edicao: false,
         }
@@ -44,9 +46,40 @@ impl FasePosicionamento {
     }
 
     pub fn navio_atual(&self) -> Option<(&str, usize)> {
-        self.fila_navios
-            .get(self.indice_atual)
-            .map(|(nome, tamanho)| (nome.as_str(), *tamanho))
+        // Priorizar navio em reposicionamento
+        if let Some((nome, tamanho)) = &self.navio_em_reposicionamento {
+            return Some((nome.as_str(), *tamanho));
+        }
+        
+        // Senão, pegar da fila
+        match self.navio_selecionado {
+            Some(idx) => self.fila_navios
+                .get(idx)
+                .map(|(nome, tamanho)| (nome.as_str(), *tamanho)),
+            None => None,
+        }
+    }
+
+    pub fn selecionar_navio(&mut self, indice: usize) -> bool {
+        // Não permitir selecionar outro navio se há um em reposicionamento
+        if self.navio_em_reposicionamento.is_some() {
+            return false;
+        }
+        
+        if indice < self.fila_navios.len() {
+            self.navio_selecionado = Some(indice);
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn navio_selecionado_indice(&self) -> Option<usize> {
+        self.navio_selecionado
+    }
+
+    pub fn obter_fila_navios(&self) -> &[(String, usize)] {
+        &self.fila_navios
     }
 
     fn ajustar_coordenada_para_centro(&self, x: usize, y: usize, tamanho: usize) -> (usize, usize) {
@@ -95,8 +128,16 @@ impl FasePosicionamento {
         x: usize,
         y: usize,
     ) -> Result<bool, String> {
-        let Some((nome, tamanho)) = self.fila_navios.get(self.indice_atual).cloned() else {
-            return Ok(true);
+        // Obter nome e tamanho do navio (priorizar navio em reposicionamento)
+        let (nome, tamanho) = if let Some((nome, tamanho)) = &self.navio_em_reposicionamento {
+            (nome.clone(), *tamanho)
+        } else if let Some(idx_selecionado) = self.navio_selecionado {
+            let Some((nome, tamanho)) = self.fila_navios.get(idx_selecionado).cloned() else {
+                return Ok(true);
+            };
+            (nome, tamanho)
+        } else {
+            return Err("Nenhum navio selecionado".into());
         };
 
         let (start_x, start_y) = self.ajustar_coordenada_para_centro(x, y, tamanho);
@@ -105,21 +146,25 @@ impl FasePosicionamento {
             .tabuleiro_mut()
             .posicionar_navio(&nome, start_x, start_y, tamanho, self.orientacao_horizontal)?;
 
-        self.indice_atual += 1;
+        // Limpar navio em reposicionamento (se houver)
+        if self.navio_em_reposicionamento.is_some() {
+            self.navio_em_reposicionamento = None;
+        } else if let Some(idx_selecionado) = self.navio_selecionado {
+            // Remover o navio da fila
+            self.fila_navios.remove(idx_selecionado);
+        }
+        
+        self.navio_selecionado = None;
+        
         Ok(self.terminou())
     }
 
     pub fn terminou(&self) -> bool {
-        self.indice_atual >= self.fila_navios.len()
+        self.fila_navios.is_empty()
     }
 
     pub fn todos_posicionados(&self) -> bool {
-        // No modo edição, verificar se a fila está vazia
-        if self.modo_edicao {
-            return self.fila_navios.is_empty();
-        }
-        // Fora do modo edição, verificar o índice como antes
-        self.indice_atual >= self.fila_navios.len()
+        self.fila_navios.is_empty()
     }
 
     pub fn em_modo_edicao(&self) -> bool {
@@ -127,12 +172,7 @@ impl FasePosicionamento {
     }
 
     pub fn ativar_modo_edicao(&mut self) {
-        if self.terminou() {
-            self.modo_edicao = true;
-            // Limpar a fila - não é mais necessária após posicionamento inicial
-            self.fila_navios.clear();
-            self.indice_atual = 0;
-        }
+        self.modo_edicao = true;
     }
 
     pub fn desativar_modo_edicao(&mut self) {
@@ -140,10 +180,6 @@ impl FasePosicionamento {
     }
 
     pub fn remover_navio(&mut self, nome: &str) -> bool {
-        if !self.modo_edicao {
-            return false;
-        }
-
         // Encontrar o navio na frota original para pegar o tamanho
         let tamanho_navio = FROTA_PADRAO
             .iter()
@@ -151,11 +187,9 @@ impl FasePosicionamento {
             .map(|config| config.tamanho);
 
         if let Some(tamanho) = tamanho_navio {
-            // Adicionar o navio removido à fila (que deve estar vazia)
-            self.fila_navios.push((nome.to_string(), tamanho));
-            // Índice já está em 0, pronto para posicionar este navio
-            
-            self.desativar_modo_edicao();
+            // Guardar navio em reposicionamento (não adiciona à fila)
+            self.navio_em_reposicionamento = Some((nome.to_string(), tamanho));
+            self.navio_selecionado = None;
             return true;
         }
 

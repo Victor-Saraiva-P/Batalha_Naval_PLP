@@ -367,6 +367,10 @@ tile_set = SubResource("TileSet_fw6bw")
 
 [node name="ControladorBatalha" type="ControladorBatalha" parent="." unique_id=200106303]
 
+[node name="UILayer" type="CanvasLayer" parent="ControladorBatalha"]
+
+[node name="ContainerNavios" type="GridContainer" parent="ControladorBatalha/UILayer"]
+
 [node name="AudioManager" type="Node2D" parent="ControladorBatalha" unique_id=453797652]
 
 [node name="sfx_destruicao" type="AudioStreamPlayer" parent="ControladorBatalha/AudioManager" unique_id=1333424358]
@@ -444,10 +448,6 @@ text = "Perder (Teste)"
 [node name="BotaoConfirmarPosicionamento" type="Button" parent="ControladorBatalha" unique_id=2037498854]
 offset_right = 8.0
 offset_bottom = 8.0
-
-[node name="ContainerNavios" type="VBoxContainer" parent="ControladorBatalha" unique_id=1097507260]
-offset_right = 40.0
-offset_bottom = 40.0
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1329829903]
 position = Vector2(300, 200)

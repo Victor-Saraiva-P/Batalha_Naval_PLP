@@ -1,4 +1,4 @@
-use godot::classes::{Button, FontFile, Label, Node2D, ResourceLoader};
+use godot::classes::{Button, FontFile, GridContainer, Label, Node2D, ResourceLoader};
 use godot::global::HorizontalAlignment;
 use godot::prelude::*;
 
@@ -11,6 +11,7 @@ pub struct GerenciadorInterface {
     botao_continuar: Option<Gd<Button>>,
     label_ajuda_posicionamento: Option<Gd<Label>>,
     botao_confirmar_posicionamento: Option<Gd<Button>>,
+    container_navios: Option<Gd<GridContainer>>,
 }
 
 impl GerenciadorInterface {
@@ -22,6 +23,7 @@ impl GerenciadorInterface {
             botao_continuar: None,
             label_ajuda_posicionamento: None,
             botao_confirmar_posicionamento: None,
+            container_navios: None,
         }
     }
 
@@ -120,6 +122,21 @@ impl GerenciadorInterface {
             botao.set_text("Começar Batalha");
             botao.set_visible(false);
             self.botao_confirmar_posicionamento = Some(botao);
+        }
+
+        if let Some(mut container) = node.try_get_node_as::<GridContainer>("UILayer/ContainerNavios") {
+            godot_print!("ContainerNavios (GridContainer) encontrado com sucesso no UILayer!");            
+            // Posicionar o container de navios na parte inferior
+            container.set_position(Vector2::new(160.0, 310.0));
+            container.set_size(Vector2::new(530.0, 120.0));
+            container.set_columns(3);
+            container.add_theme_constant_override("h_separation", 2);
+            container.add_theme_constant_override("v_separation", 5);
+            container.set_visible(false);
+            
+            self.container_navios = Some(container);
+        } else {
+            godot_print!("AVISO: ContainerNavios não foi encontrado em UILayer/ContainerNavios!");
         }
     }
 
@@ -235,5 +252,21 @@ impl GerenciadorInterface {
         if let Some(mut botao) = self.botao_confirmar_posicionamento.clone() {
             botao.set_visible(false);
         }
+    }
+
+    pub fn mostrar_container_navios(&mut self) {
+        if let Some(mut container) = self.container_navios.clone() {
+            container.set_visible(true);
+        }
+    }
+
+    pub fn esconder_container_navios(&mut self) {
+        if let Some(mut container) = self.container_navios.clone() {
+            container.set_visible(false);
+        }
+    }
+
+    pub fn container_navios(&self) -> Option<Gd<GridContainer>> {
+        self.container_navios.clone()
     }
 }
