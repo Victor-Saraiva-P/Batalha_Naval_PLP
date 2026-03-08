@@ -1,0 +1,60 @@
+[gd_scene format=3 uid="uid://bqdjd07fp4qvx"]
+
+[ext_resource type="Texture2D" uid="uid://bevc30ft6uwcf" path="res://textures/fundo_vitoria_e_derrota.png" id="1_3redg"]
+[ext_resource type="Texture2D" uid="uid://b5svmjy7114dt" path="res://textures/capitao_feliz.png" id="2_4wkkb"]
+[ext_resource type="Texture2D" uid="uid://b5lunk55ibc1y" path="res://textures/balao_de_fala.png" id="3_820o3"]
+[ext_resource type="PackedScene" uid="uid://bo6cmgk4y7g23" path="res://scenes/meubotao.tscn" id="4_4wkkb"]
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_80vbu"]
+texture = ExtResource("3_820o3")
+
+[sub_resource type="LabelSettings" id="LabelSettings_d75bo"]
+line_spacing = 1.0
+font_size = 13
+font_color = Color(0, 0, 0, 1)
+
+[node name="tela_vitoria" type="CenaFimDeJogo" unique_id=2099539584]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="fundo" type="TextureRect" parent="." unique_id=1808389888]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+texture = ExtResource("1_3redg")
+
+[node name="capitao" type="TextureRect" parent="." unique_id=2061210583]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+texture = ExtResource("2_4wkkb")
+
+[node name="balao_de_fala" type="PanelContainer" parent="." unique_id=310745673]
+layout_mode = 0
+offset_top = -23.0
+offset_right = 216.0
+offset_bottom = 199.0
+theme_override_styles/panel = SubResource("StyleBoxTexture_80vbu")
+
+[node name="Label" type="Label" parent="." unique_id=318979222]
+layout_mode = 0
+offset_left = 30.0
+offset_top = 44.0
+offset_right = 191.0
+offset_bottom = 101.0
+text = "Parabéns!
+Você conseguiu 
+finalizar o desafio!"
+label_settings = SubResource("LabelSettings_d75bo")
+horizontal_alignment = 1
+
+[node name="botao_sair" parent="." unique_id=1246405146 instance=ExtResource("4_4wkkb")]
+layout_mode = 0
+offset_left = 502.0
+offset_top = 353.0
+offset_right = 585.0
+offset_bottom = 387.0
+text = "Sair"

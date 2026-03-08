@@ -1,5 +1,5 @@
 use godot::prelude::*;
-use godot::classes::{Control, IControl, VBoxContainer, Label, PackedScene, ResourceLoader, TextureRect};
+use godot::classes::{Button, Control, IControl, Label, PackedScene, ResourceLoader, TextureRect, VBoxContainer};
 
 pub struct RegistroRanking {
     pub nome_login: String,
@@ -27,6 +27,10 @@ impl IControl for CenaRanking {
         ];
 
         self.popular_lista(dados_falsos);
+
+        let mut btn_voltar = self.base().get_node_as::<Button>("botao_voltar");
+        let callable = self.base().callable("voltar_menu");
+        btn_voltar.connect("pressed", &callable);
     }
 }
 
@@ -60,5 +64,11 @@ impl CenaRanking {
 
             lista_container.add_child(&nova_linha);
         }
+    }
+
+    #[func]
+    fn voltar_menu(&mut self) {
+        let mut tree = self.base().get_tree();
+        tree.change_scene_to_file("res://MenuPrincipal.tscn");
     }
 }

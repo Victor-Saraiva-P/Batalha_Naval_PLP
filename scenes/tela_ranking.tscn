@@ -150,25 +150,21 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=122634837]
-position = Vector2(240, 160)
-scale = Vector2(0.39999998, 0.4232804)
+position = Vector2(300, 206)
+scale = Vector2(0.5, 0.5423281)
 sprite_frames = SubResource("SpriteFrames_3pi2t")
 autoplay = "default"
 frame_progress = 0.91789925
 
 [node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=861636250]
 layout_mode = 1
-anchors_preset = 8
+anchors_preset = 5
 anchor_left = 0.5
-anchor_top = 0.5
 anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -222.0
-offset_top = -160.0
-offset_right = 222.0
-offset_bottom = 160.0
+offset_left = -279.0
+offset_right = 277.0
+offset_bottom = 401.0
 grow_horizontal = 2
-grow_vertical = 2
 theme_override_constants/separation = 3
 
 [node name="Control" type="Control" parent="VBoxContainer" unique_id=2024105852]
@@ -185,3 +181,11 @@ label_settings = SubResource("LabelSettings_ql6jg")
 [node name="Control2" type="Control" parent="VBoxContainer" unique_id=479265026]
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
+
+[node name="botao_voltar" type="Button" parent="." unique_id=1899808391]
+layout_mode = 0
+offset_left = 495.0
+offset_top = 358.0
+offset_right = 586.0
+offset_bottom = 387.0
+text = "⬅ Voltar"
