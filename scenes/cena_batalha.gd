@@ -66,19 +66,13 @@ func _on_batalha_encerrada(vitoria: bool) -> void:
 				usuario_node.adicionar_conquista(login_atual, "Almirante")
 
 		if CampaignState.vitorias >= 3 or CampaignState.campanha_concluida:
-			get_tree().change_scene_to_file(VITORIA_SCENE_PATH)
+			get_tree().call_deferred("change_scene_to_file", VITORIA_SCENE_PATH)
 		else:
-			get_tree().change_scene_to_file(CAMPANHA_SCENE_PATH)
+			get_tree().call_deferred("change_scene_to_file", CAMPANHA_SCENE_PATH)
 		return
 
 	CampaignState.registrar_derrota()
 	if login_atual != "":
 		usuario_node.registrar_derrota(login_atual)
 
-	get_tree().change_scene_to_file(DERROTA_SCENE_PATH)
-
-	CampaignState.registrar_derrota()
-	if login_atual != "":
-		usuario_node.registrar_derrota(login_atual)
-		
-	get_tree().change_scene_to_file(DERROTA_SCENE_PATH)
+	get_tree().call_deferred("change_scene_to_file", DERROTA_SCENE_PATH)
