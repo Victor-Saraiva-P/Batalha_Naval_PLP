@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://dwprnxdpbj2ov"]
 
-[ext_resource type="Texture2D" uid="uid://hj5ghj0wwe2h" path="res://background_menu.webp" id="1_cefhe"]
+[ext_resource type="Texture2D" uid="uid://dgjs0hb1dhn32" path="res://ap (1).png" id="1_cefhe"]
 [ext_resource type="FontFile" uid="uid://cbvk8gbmixmbq" path="res://fonts/Retro Gaming.ttf" id="2_x6tfd"]
 [ext_resource type="Script" uid="uid://bh4mmujqquxnf" path="res://tela_login.gd" id="3_x6tfd"]
 [ext_resource type="PackedScene" uid="uid://bo6cmgk4y7g23" path="res://scenes/meubotao.tscn" id="4_dwemr"]
@@ -17,7 +17,7 @@ content_margin_left = 15.0
 content_margin_top = 15.0
 content_margin_right = 15.0
 content_margin_bottom = 15.0
-bg_color = Color(0.44313726, 0.79607844, 0.9647059, 0.6392157)
+bg_color = Color(0.87058824, 0.7254902, 0.43529412, 0.7647059)
 corner_radius_top_left = 15
 corner_radius_top_right = 15
 corner_radius_bottom_right = 15
@@ -42,6 +42,7 @@ grow_vertical = 2
 theme_override_constants/margin_top = 60
 
 [node name="Label" type="Label" parent="MarginContainer" unique_id=752176807]
+visible = false
 layout_mode = 2
 size_flags_vertical = 0
 text = "BattleShip Rust"
