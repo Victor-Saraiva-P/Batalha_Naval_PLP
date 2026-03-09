@@ -7,6 +7,9 @@ const DERROTA_SCENE_PATH := "res://scenes/ui/tela_derrota.tscn"
 @onready var controlador: Node = $ControladorBatalha
 
 func _ready() -> void:
+	var modo_dinamico := CampaignState.modo_campanha == "dinamica"
+	controlador.call("definir_modo_dinamico", modo_dinamico)
+
 	if not CampaignState.em_campanha:
 		return
 
