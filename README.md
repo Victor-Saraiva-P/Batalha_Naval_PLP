@@ -49,7 +49,7 @@ Projeto acadêmico desenvolvido para a disciplina de **Paradigmas de Linguagens 
 
 ## Preview
 
-![Preview do jogo](ship-game.gif)
+![Preview do jogo](image.png)
 
 <a id="tecnologias"></a>
 ## Tecnologias
