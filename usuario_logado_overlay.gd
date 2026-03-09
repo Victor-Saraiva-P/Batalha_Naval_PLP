@@ -1,6 +1,6 @@
 extends CanvasLayer
 
-const CURRENT_USER_PATH := "res://dados_autenticacao/usuario_logado.txt"
+const SESSION_FILE_PATH := "res://dados/usuario_atual.json"
 const LOGIN_SCENE_PATH := "res://TelaLogin.tscn"
 
 var _label: Label
@@ -45,13 +45,22 @@ func _atualizar_texto_usuario() -> void:
 		_label.text = "Usuario: %s" % usuario
 
 func _ler_usuario_logado() -> String:
-	if not FileAccess.file_exists(CURRENT_USER_PATH):
+	if not FileAccess.file_exists(SESSION_FILE_PATH):
 		return ""
 
-	var file := FileAccess.open(CURRENT_USER_PATH, FileAccess.READ)
+	var file := FileAccess.open(SESSION_FILE_PATH, FileAccess.READ)
 	if file == null:
 		return ""
 
-	var usuario := file.get_as_text().strip_edges()
+	var content := file.get_as_text().strip_edges()
 	file.close()
-	return usuario
+	if content.is_empty():
+		return ""
+
+	var parser := JSON.new()
+	var err := parser.parse(content)
+	if err != OK or typeof(parser.data) != TYPE_DICTIONARY:
+		return ""
+
+	var sessao: Dictionary = parser.data
+	return str(sessao.get("login", "")).strip_edges()

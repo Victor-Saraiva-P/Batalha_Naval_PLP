@@ -1,5 +1,6 @@
 use godot::prelude::*;
 use crate::application::services::usuario_service::UsuarioService;
+use crate::domain::entidades::conquista::Conquista;
 use crate::infrastructure::repositorio_usuario_json::RepositorioUsuarioJson;
 use crate::domain::entidades::usuario::Usuario;
 
@@ -19,7 +20,21 @@ fn usuario_para_dict(u : Usuario) -> Dictionary<GString, Variant> {
     dict.set("vitorias", u.vitorias as i64);
     dict.set("derrotas", u.derrotas as i64);
     dict.set("taxa_de_vitoria", u.taxa_de_vitoria() as f64);
+    let mut conquistas = PackedStringArray::new();
+    for conquista in u.conquistas {
+        conquistas.push(&GString::from(conquista_para_str(&conquista)));
+    }
+    dict.set("conquistas", &conquistas);
     dict
+}
+
+fn conquista_para_str(conquista: &Conquista) -> &'static str {
+    match conquista {
+        Conquista::Almirante => "Almirante",
+        Conquista::Capitao => "Capitao",
+        Conquista::CapitaoDeMarEGuerra => "CapitaoDeMarEGuerra",
+        Conquista::Marinheiro => "Marinheiro",
+    }
 }
 
 #[godot_api]

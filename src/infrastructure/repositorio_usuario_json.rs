@@ -1,4 +1,5 @@
 use std::fs;
+use std::path::Path;
 use crate::domain::entidades::usuario::Usuario;
 use crate::domain::repositorios::repositorio_usuario::RepositorioUsuario;
 
@@ -10,6 +11,8 @@ pub struct RepositorioUsuarioJson {
 impl RepositorioUsuarioJson {
 
     pub fn new(path: &str) -> Self {
+        garantir_diretorio_pai(path);
+
         let data = fs::read_to_string(path)
             .unwrap_or_else(|_| "[]".to_string());
 
@@ -23,6 +26,8 @@ impl RepositorioUsuarioJson {
     }
 
     fn persist(&self) -> Result<(), String> {
+        garantir_diretorio_pai(&self.path);
+
         let json =
             serde_json::to_string_pretty(&self.users)
             .map_err(|e| e.to_string())?;
@@ -31,6 +36,12 @@ impl RepositorioUsuarioJson {
             .map_err(|e| e.to_string())?;
 
         Ok(())
+    }
+}
+
+fn garantir_diretorio_pai(path: &str) {
+    if let Some(parent) = Path::new(path).parent() {
+        let _ = fs::create_dir_all(parent);
     }
 }
 
