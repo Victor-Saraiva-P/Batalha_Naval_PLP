@@ -1,7 +1,8 @@
-use godot::prelude::*;
-use godot::classes::{Button, Control, IControl, Label, VBoxContainer};
-use crate::infrastructure::repositorio_usuario_json::RepositorioUsuarioJson;
+use crate::application::app_paths::{MENU_SCENE_PATH, USERS_DATA_RES_PATH, USER_SESSION_RES_PATH};
 use crate::application::services::usuario_service::UsuarioService;
+use crate::infrastructure::repositorio_usuario_json::RepositorioUsuarioJson;
+use godot::classes::{Button, Control, IControl, Label, VBoxContainer};
+use godot::prelude::*;
 
 #[derive(GodotClass)]
 #[class(base=Control)]
@@ -33,11 +34,15 @@ impl IControl for CenaConquistas {
 #[godot_api]
 impl CenaConquistas {
     fn obter_login_atual(&self) -> String {
-        let caminho = "res://dados/usuario_atual.json";
+        let caminho = USER_SESSION_RES_PATH;
         if godot::classes::FileAccess::file_exists(caminho) {
             let conteudo = godot::classes::FileAccess::get_file_as_string(caminho).to_string();
             if let Ok(json) = serde_json::from_str::<serde_json::Value>(&conteudo) {
-                return json.get("login").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                return json
+                    .get("login")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string();
             }
         }
         "".to_string()
@@ -47,16 +52,19 @@ impl CenaConquistas {
         let mut label_stats = self.base().get_node_as::<Label>("LabelEstatisticas");
 
         let ps = godot::classes::ProjectSettings::singleton();
-        let path_absoluto = ps.globalize_path("res://dados/usuarios.json").to_string();
+        let path_absoluto = ps.globalize_path(USERS_DATA_RES_PATH).to_string();
 
         let service = UsuarioService {
-            repo: RepositorioUsuarioJson::new(&path_absoluto)
+            repo: RepositorioUsuarioJson::new(&path_absoluto),
         };
 
         if let Ok(u) = service.buscar_por_login(login) {
             let texto = format!(
                 "Partidas: {} | Vitórias: {} | Derrotas: {}\nTaxa de Vitória: {:.1}%",
-                u.jogos_totais, u.vitorias, u.derrotas, u.taxa_de_vitoria() * 100.0
+                u.jogos_totais,
+                u.vitorias,
+                u.derrotas,
+                u.taxa_de_vitoria() * 100.0
             );
             label_stats.set_text(&texto);
         }
@@ -64,21 +72,28 @@ impl CenaConquistas {
 
     fn obter_conquistas_usuario(&self, login: &str) -> Vec<String> {
         let ps = godot::classes::ProjectSettings::singleton();
-        let path_absoluto = ps.globalize_path("res://dados/usuarios.json").to_string();
+        let path_absoluto = ps.globalize_path(USERS_DATA_RES_PATH).to_string();
 
         let service = UsuarioService {
-            repo: RepositorioUsuarioJson::new(&path_absoluto)
+            repo: RepositorioUsuarioJson::new(&path_absoluto),
         };
 
         if let Ok(u) = service.buscar_por_login(login) {
-            return u.conquistas.iter().map(|c| {
-                match c {
-                    crate::domain::entidades::conquista::Conquista::Almirante => "Almirante",
-                    crate::domain::entidades::conquista::Conquista::Capitao => "Capitao",
-                    crate::domain::entidades::conquista::Conquista::CapitaoDeMarEGuerra => "CapitaoDeMarEGuerra",
-                    crate::domain::entidades::conquista::Conquista::Marinheiro => "Marinheiro",
-                }.to_string()
-            }).collect();
+            return u
+                .conquistas
+                .iter()
+                .map(|c| {
+                    match c {
+                        crate::domain::entidades::conquista::Conquista::Almirante => "Almirante",
+                        crate::domain::entidades::conquista::Conquista::Capitao => "Capitao",
+                        crate::domain::entidades::conquista::Conquista::CapitaoDeMarEGuerra => {
+                            "CapitaoDeMarEGuerra"
+                        }
+                        crate::domain::entidades::conquista::Conquista::Marinheiro => "Marinheiro",
+                    }
+                    .to_string()
+                })
+                .collect();
         }
         vec![]
     }
@@ -112,6 +127,6 @@ impl CenaConquistas {
 
     #[func]
     fn voltar_menu(&mut self) {
-        self.base().get_tree().change_scene_to_file("res://MenuPrincipal.tscn");
+        self.base().get_tree().change_scene_to_file(MENU_SCENE_PATH);
     }
 }

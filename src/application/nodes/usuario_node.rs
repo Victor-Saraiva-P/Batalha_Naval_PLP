@@ -1,17 +1,18 @@
-use godot::prelude::*;
+use crate::application::app_paths::USERS_DATA_RES_PATH;
 use crate::application::services::usuario_service::UsuarioService;
 use crate::domain::entidades::conquista::Conquista;
-use crate::infrastructure::repositorio_usuario_json::RepositorioUsuarioJson;
 use crate::domain::entidades::usuario::Usuario;
+use crate::infrastructure::repositorio_usuario_json::RepositorioUsuarioJson;
+use godot::prelude::*;
 
 #[derive(GodotClass)]
 #[class(base=Node)]
 pub struct UsuarioNode {
     service: UsuarioService<RepositorioUsuarioJson>,
-    base: Base<Node>
+    base: Base<Node>,
 }
 
-fn usuario_para_dict(u : Usuario) -> Dictionary<GString, Variant> {
+fn usuario_para_dict(u: Usuario) -> Dictionary<GString, Variant> {
     let mut dict = Dictionary::new();
     dict.set("id", u.id as i64);
     dict.set("nome", &GString::from(&u.nome));
@@ -43,20 +44,19 @@ use godot::classes::ProjectSettings;
 impl INode for UsuarioNode {
     fn init(base: Base<Node>) -> Self {
         let ps = ProjectSettings::singleton();
-        let path_absoluto = ps.globalize_path("res://dados/usuarios.json").to_string();
+        let path_absoluto = ps.globalize_path(USERS_DATA_RES_PATH).to_string();
 
-        Self{
+        Self {
             service: UsuarioService {
-                repo: RepositorioUsuarioJson::new(&path_absoluto)
+                repo: RepositorioUsuarioJson::new(&path_absoluto),
             },
-            base
+            base,
         }
     }
 }
 
 #[godot_api]
 impl UsuarioNode {
-
     #[func]
     pub fn registrar(&mut self, nome: GString, login: GString, senha: GString) -> bool {
         self.service
@@ -68,7 +68,7 @@ impl UsuarioNode {
     pub fn login(&self, login: GString, senha: GString) -> Dictionary<GString, Variant> {
         match self.service.login(&login.to_string(), &senha.to_string()) {
             Ok(usuario) => usuario_para_dict(usuario),
-            Err(_) => Dictionary::new()
+            Err(_) => Dictionary::new(),
         }
     }
 
@@ -76,7 +76,7 @@ impl UsuarioNode {
     pub fn buscar_por_login(&self, login: GString) -> Dictionary<GString, Variant> {
         match self.service.buscar_por_login(&login.to_string()) {
             Ok(usuario) => usuario_para_dict(usuario),
-            Err(_) => Dictionary::new()
+            Err(_) => Dictionary::new(),
         }
     }
 
@@ -88,9 +88,18 @@ impl UsuarioNode {
     }
 
     #[func]
-    pub fn atualizar_senha(&mut self, login: GString, senha_atual: GString, nova_senha: GString) -> bool {
+    pub fn atualizar_senha(
+        &mut self,
+        login: GString,
+        senha_atual: GString,
+        nova_senha: GString,
+    ) -> bool {
         self.service
-            .atualizar_senha(&login.to_string(), &senha_atual.to_string(), nova_senha.to_string())
+            .atualizar_senha(
+                &login.to_string(),
+                &senha_atual.to_string(),
+                nova_senha.to_string(),
+            )
             .is_ok()
     }
 
@@ -108,7 +117,7 @@ impl UsuarioNode {
             "Capitao" => Conquista::Capitao,
             "CapitaoDeMarEGuerra" => Conquista::CapitaoDeMarEGuerra,
             "Marinheiro" => Conquista::Marinheiro,
-            _ => return false
+            _ => return false,
         };
 
         self.service
@@ -125,23 +134,19 @@ impl UsuarioNode {
                     array.push(&GString::from(conquista_para_str(&c)));
                 }
                 array
-            },
-            Err(_) => PackedStringArray::new()
+            }
+            Err(_) => PackedStringArray::new(),
         }
     }
 
     #[func]
     pub fn registrar_vitoria(&mut self, login: GString) -> bool {
-        self.service
-            .registrar_vitoria(&login.to_string())
-            .is_ok()
+        self.service.registrar_vitoria(&login.to_string()).is_ok()
     }
 
     #[func]
     pub fn registrar_derrota(&mut self, login: GString) -> bool {
-        self.service
-            .registrar_derrota(&login.to_string())
-            .is_ok()
+        self.service.registrar_derrota(&login.to_string()).is_ok()
     }
 
     #[func]
@@ -154,8 +159,8 @@ impl UsuarioNode {
                 dict.set("derrotas", derrotas as i64);
                 dict.set("taxa_de_vitoria", taxa as f64);
                 dict
-            },
-            Err(_) => Dictionary::new()
+            }
+            Err(_) => Dictionary::new(),
         }
     }
 }

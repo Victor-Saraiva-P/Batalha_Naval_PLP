@@ -1,3 +1,4 @@
+pub mod app_paths;
 pub mod controlador_batalha;
 pub mod fase_posicionamento;
 pub mod fase_selecao_dificuldade;
@@ -8,5 +9,5 @@ pub mod gerenciador_turnos;
 pub mod helpers;
 
 //usuario
-pub mod services;
 pub mod nodes;
+pub mod services;

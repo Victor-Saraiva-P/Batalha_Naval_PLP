@@ -1,5 +1,6 @@
-use godot::prelude::*;
+use crate::application::app_paths::MENU_SCENE_PATH;
 use godot::classes::{Button, Control, IControl};
+use godot::prelude::*;
 
 #[derive(GodotClass)]
 #[class(base=Control)]
@@ -25,6 +26,6 @@ impl CenaFimDeJogo {
     #[func]
     fn voltar_menu(&mut self) {
         let mut tree = self.base().get_tree();
-        tree.change_scene_to_file("res://MenuPrincipal.tscn");
+        tree.change_scene_to_file(MENU_SCENE_PATH);
     }
 }

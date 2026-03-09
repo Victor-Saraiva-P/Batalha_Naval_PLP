@@ -1,5 +1,10 @@
+use crate::application::app_paths::{
+    LINHA_JOGADOR_SCENE_PATH, MENU_SCENE_PATH, USERS_DATA_RES_PATH, USER_SESSION_RES_PATH,
+};
+use godot::classes::{
+    Button, Control, IControl, Label, PackedScene, ResourceLoader, TextureRect, VBoxContainer,
+};
 use godot::prelude::*;
-use godot::classes::{Button, Control, IControl, Label, PackedScene, ResourceLoader, TextureRect, VBoxContainer};
 use std::fs;
 
 pub struct RegistroRanking {
@@ -36,12 +41,17 @@ impl IControl for CenaRanking {
 
 #[godot_api]
 impl CenaRanking {
+    fn ler_json_res_path(&self, res_path: &str) -> Option<serde_json::Value> {
+        let ps = godot::classes::ProjectSettings::singleton();
+        let caminho_absoluto = ps.globalize_path(res_path).to_string();
+        let conteudo = fs::read_to_string(caminho_absoluto).ok()?;
+        serde_json::from_str::<serde_json::Value>(&conteudo).ok()
+    }
+
     fn obter_usuario_atual(&self) -> String {
-        if let Ok(conteudo) = fs::read_to_string("usuario_atual.json") {
-            if let Ok(json) = serde_json::from_str::<serde_json::Value>(&conteudo) {
-                if let Some(login) = json.get("login").and_then(|v| v.as_str()) {
-                    return login.to_string();
-                }
+        if let Some(json) = self.ler_json_res_path(USER_SESSION_RES_PATH) {
+            if let Some(login) = json.get("login").and_then(|v| v.as_str()) {
+                return login.to_string();
             }
         }
         String::new()
@@ -50,18 +60,16 @@ impl CenaRanking {
     fn ler_dados_ranking(&self, usuario_atual: &str) -> Vec<RegistroRanking> {
         let mut lista_jogadores = Vec::new();
 
-        let mut json_string = String::new();
-        if let Ok(conteudo) = fs::read_to_string("dados/usuarios.json") {
-            json_string = conteudo;
-        } else if let Ok(conteudo) = fs::read_to_string("usuarios.json") {
-            json_string = conteudo;
-        }
-
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&json_string) {
+        if let Some(json) = self.ler_json_res_path(USERS_DATA_RES_PATH) {
             if let Some(array) = json.as_array() {
                 for item in array {
-                    let login = item.get("login").and_then(|v| v.as_str()).unwrap_or("Desconhecido").to_string();
-                    let vitorias = item.get("vitorias").and_then(|v| v.as_i64()).unwrap_or(0) as i32;
+                    let login = item
+                        .get("login")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("Desconhecido")
+                        .to_string();
+                    let vitorias =
+                        item.get("vitorias").and_then(|v| v.as_i64()).unwrap_or(0) as i32;
                     let pontuacao = vitorias * 100;
 
                     lista_jogadores.push(RegistroRanking {
@@ -81,12 +89,12 @@ impl CenaRanking {
 
         let mut resource_loader = ResourceLoader::singleton();
         let cena_linha = resource_loader
-            .load("res://scenes/linha_jogador.tscn")
+            .load(LINHA_JOGADOR_SCENE_PATH)
             .unwrap()
             .cast::<PackedScene>();
 
         for (index, jogador) in dados.into_iter().enumerate() {
-            let mut nova_linha = cena_linha.instantiate().unwrap();
+            let nova_linha = cena_linha.instantiate().unwrap();
 
             let mut label_nome = nova_linha.get_node_as::<Label>("nick");
             label_nome.set_text(&jogador.nome_login);
@@ -114,6 +122,6 @@ impl CenaRanking {
     #[func]
     fn voltar_menu(&mut self) {
         let mut tree = self.base().get_tree();
-        tree.change_scene_to_file("res://MenuPrincipal.tscn");
+        tree.change_scene_to_file(MENU_SCENE_PATH);
     }
 }
