@@ -18,6 +18,7 @@ config/icon="res://icon.svg"
 [autoload]
 
 CampaignState="*res://campaign_state.gd"
+UsuarioLogadoOverlay="*res://usuario_logado_overlay.gd"
 
 [display]
 
