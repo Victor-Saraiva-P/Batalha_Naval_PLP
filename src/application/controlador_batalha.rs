@@ -1,10 +1,11 @@
-use godot::classes::{Button, INode2D, Input, InputEvent, InputEventKey, InputEventMouseButton, Label, Node, Node2D, TileMapLayer};
-use godot::global::MouseButton;
+use godot::classes::{INode2D, Input, InputEvent, InputEventKey, InputEventMouseButton, Label, Node, Node2D, TileMapLayer};
+use godot::global::{Key, MouseButton};
 use godot::prelude::*;
 
 use crate::application::fase_posicionamento::FasePosicionamento;
 use crate::application::fase_selecao_dificuldade::FaseSelecaoDificuldade;
 use crate::application::gerenciador_audio::GerenciadorAudio;
+use crate::application::gerenciador_efeito::{posicao_global_tile, GerenciadorEfeito};
 use crate::application::gerenciador_interface::GerenciadorInterface;
 use crate::application::gerenciador_turnos::{EstadoTurno, GerenciadorTurnos};
 use crate::application::helpers::{conversao_coordenadas, coordenadas, cursor};
@@ -29,10 +30,10 @@ pub struct ControladorBatalha {
     gerenciador_turnos: GerenciadorTurnos,
     gerenciador_interface: GerenciadorInterface,
     gerenciador_audio: GerenciadorAudio,
+    gerenciador_efeito: GerenciadorEfeito,
     tempo_restante_ia: f64,
     estado_anterior: EstadoTurno,
     tooltip_instrucao: Option<Gd<Label>>,
-    botao_xray: Option<Gd<Button>>,
     mapa_xray_ia: Option<Gd<TileMapLayer>>,
     mapa_xray_ia_navios: Option<Gd<TileMapLayer>>,
     label_xray_ia: Option<Gd<Label>>,
@@ -65,10 +66,10 @@ impl INode2D for ControladorBatalha {
             gerenciador_turnos: GerenciadorTurnos::novo(total_navios),
             gerenciador_interface: GerenciadorInterface::novo(),
             gerenciador_audio: GerenciadorAudio::novo(),
+            gerenciador_efeito: GerenciadorEfeito::novo(),
             tempo_restante_ia: 0.0,
             estado_anterior: EstadoTurno::SelecaoDificuldade,
             tooltip_instrucao: None,
-            botao_xray: None,
             mapa_xray_ia: None,
             mapa_xray_ia_navios: None,
             label_xray_ia: None,
@@ -95,8 +96,6 @@ impl INode2D for ControladorBatalha {
         }
 
         self.gerenciador_interface.inicializar(self.base().clone());
-        self.botao_xray = self.base().try_get_node_as::<Button>("BotaoXRay");
-        self.atualizar_texto_botao_xray();
         self.inicializar_xray_ia();
         self.inicializar_ship_layers();
 
@@ -155,8 +154,9 @@ impl INode2D for ControladorBatalha {
         self.atualizar_controle_cursor();
         self.atualizar_xray_ia();
 
-        // Processar delays de som
+        // Processar delays de som e partículas de fumaça
         self.gerenciador_audio.processar_delays(delta);
+        self.gerenciador_efeito.atualizar();
 
         // Detectar fim de jogo e tocar sons apropriados
         let estado_atual = self.gerenciador_turnos.estado_atual();
@@ -194,9 +194,33 @@ impl INode2D for ControladorBatalha {
     }
 
     fn input(&mut self, event: Gd<InputEvent>) {
-        // Game over state is handled by the Continuar button
         if self.gerenciador_turnos.jogo_terminou() {
             return;
+        }
+
+        if let Ok(key_event) = event.clone().try_cast::<InputEventKey>() {
+            if key_event.is_pressed() && !key_event.is_echo() {
+                match key_event.get_keycode() {
+                    // F1 -> vitória instantânea (debug)
+                    Key::F1 => {
+                        self.vencer_teste();
+                        return;
+                    }
+                    // F2 -> derrota instantânea (debug)
+                    Key::F2 => {
+                        self.perder_teste();
+                        return;
+                    }
+                    // F3 -> alternar X-Ray (só disponível no modo dinâmico)
+                    Key::F3 => {
+                        if self.modo_dinamico {
+                            self.alternar_xray();
+                        }
+                        return;
+                    }
+                    _ => {}
+                }
+            }
         }
 
         if self.gerenciador_turnos.estado_atual() == EstadoTurno::SelecaoDificuldade {
@@ -340,7 +364,6 @@ impl ControladorBatalha {
         if !ativo {
             self.xray_ativo = false;
         }
-        self.atualizar_texto_botao_xray();
         self.navio_selecionado_movimento = None;
         self.movimento_jogador_realizado = false;
         if let Some(ref mut ia) = self.jogador_ia {
@@ -351,7 +374,6 @@ impl ControladorBatalha {
     #[func]
     pub fn alternar_xray(&mut self) {
         self.xray_ativo = !self.xray_ativo;
-        self.atualizar_texto_botao_xray();
         self.atualizar_xray_ia();
     }
     #[func]
@@ -444,31 +466,17 @@ impl ControladorBatalha {
         }
     }
 
-    fn atualizar_texto_botao_xray(&mut self) {
-        if let Some(ref mut botao) = self.botao_xray {
-            let txt = if self.xray_ativo {
-                "X-Ray: ON"
-            } else {
-                "X-Ray: OFF"
-            };
-            botao.set_text(txt);
-        }
-    }
-
     fn atualizar_xray_ia(&mut self) {
         let viewport = self.base().get_viewport_rect().size;
         let pos_x = 24.0;
         let pos_y = (viewport.y - 112.0).max(16.0);
 
-        let mostrar_botao = self.modo_dinamico && !self.gerenciador_turnos.jogo_terminou();
-        if let Some(ref mut botao) = self.botao_xray {
-            botao.set_visible(mostrar_botao);
-        }
+        let mostrar_xray = self.modo_dinamico && !self.gerenciador_turnos.jogo_terminou();
 
         let Some(ref mut mapa_xray) = self.mapa_xray_ia else {
             return;
         };
-        let mostrar = mostrar_botao && self.xray_ativo;
+        let mostrar = mostrar_xray && self.xray_ativo;
         mapa_xray.set_visible(mostrar);
 
         if let Some(ref mut label) = self.label_xray_ia {
@@ -765,6 +773,13 @@ impl ControladorBatalha {
             self.tiros_jogador_no_tabuleiro_ia[x][y] = true;
         }
 
+        // Efeito de fumaça ao acertar
+        if matches!(retorno.resultado, ResultadoDisparo::Acerto | ResultadoDisparo::Afundou(_)) {
+            let pos_global = posicao_global_tile(&enemy_map, map_coord);
+            let pai = self.base().clone();
+            self.gerenciador_efeito.disparar_fumaca(pai, pos_global);
+        }
+
         // Se um navio afundou, revelar sprites no ship layer da IA
         if let ResultadoDisparo::Afundou(_) = &retorno.resultado {
             if let Some(ref ia) = self.jogador_ia {
@@ -824,6 +839,16 @@ impl ControladorBatalha {
         // Tocar disparo e agendar resultado
         self.gerenciador_audio.tocar_disparo_com_resultado(&retorno.resultado);
 
+        // Efeito de fumaça ao acertar no tabuleiro do jogador
+        if matches!(retorno.resultado, ResultadoDisparo::Acerto | ResultadoDisparo::Afundou(_)) {
+            if let Some(campo_jogador) = self.base().try_get_node_as::<TileMapLayer>("CampoJogador") {
+                let map_coord_hit = Vector2i::new(y as i32, x as i32);
+                let pos_global = posicao_global_tile(&campo_jogador, map_coord_hit);
+                let pai = self.base().clone();
+                self.gerenciador_efeito.disparar_fumaca(pai, pos_global);
+            }
+        }
+
         // Notificar a IA do resultado
         if let Some(ref mut ia) = self.jogador_ia {
             ia.notificar_resultado(x, y, &retorno);
@@ -831,12 +856,6 @@ impl ControladorBatalha {
 
         if retorno.resultado.foi_valido() {
             self.tiros_ia_no_tabuleiro_jogador[x][y] = true;
-        }
-
-        if matches!(retorno.resultado, ResultadoDisparo::Acerto | ResultadoDisparo::Afundou(_)) {
-            if let Some(player_map) = self.base().try_get_node_as::<TileMapLayer>("CampoJogador") {
-                let map_coord = Vector2i::new(y as i32, x as i32);
-            }
         }
 
         // Redesenha o tabuleiro do jogador com board_map + ship_map separados.
